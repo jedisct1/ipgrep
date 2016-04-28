@@ -9,8 +9,8 @@ Example:
 ```bash
 $ ipgrep
 hxxp://lifeiscalling-sports[.]com/8759j3f434
-mebdco .com - teyseerlab,com - meow://www.]adgroup.]ae/8759j3f434
-www.rumbafalcon\.com
+mebdco .com - teyseerlab,com. - meow://www.]adgroup.]ae/8759j3f434
+Be careful with www.rumbafalcon\.com, it used to serve malware
 ```
 returns
 ```csv
