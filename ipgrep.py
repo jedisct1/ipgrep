@@ -58,7 +58,7 @@ class ResolverResponse(object):
 
 class Resolver(object):
     def __init__(self):
-        self.channel = pycares.Channel(timeout=1.0, tries=1)
+        self.channel = pycares.Channel(timeout=5.0, tries=2)
 
     def _wait(self):
         while True:
@@ -92,8 +92,8 @@ class Extractor(object):
     def extract_names(self):
         label_r = r"[a-z0-9-]{1,63}([.]|\\[.]|,|\[[.]\]|[.]\]| [.])"
         label_last = r"[a-z0-9]{1,16}($|[^a-z0-9])"
-        matches = re.findall(r"(" + label_r +
-                             r"(" + label_r + "){,8}" +
+        matches = re.findall(r"(" +
+                             r"(" + label_r + "){1,8}" +
                              label_last + r")[.]?",
                              self.txt, re.I)
         names = [re.sub(r",", ".", x[0]).lower() for x in matches]
@@ -101,10 +101,10 @@ class Extractor(object):
         return names
 
     def extract_ips(self):
-        matches = re.findall(r"([^0-9]|^)([1-9][0-9]{0,2}(\.|\s*\[\.?\]\s*)" +
-                             "[[1-9][0-9]{0,2}(\.|\s*\[\.?\]\s*)" +
-                             "[1-9][0-9]{0,2}(\.|\s*\[\.?\]\s*)" +
-                             "[1-9][0-9]{0,2})([^0-9]|$)", self.txt)
+        matches = re.findall(r"([^0-9]|^)([0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
+                             "[0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
+                             "[0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
+                             "[0-9]{1,3})([^0-9]|$)", self.txt)
         ips = [re.sub(r"[^0-9.]", "", x[1]) for x in matches]
         return ips
 
