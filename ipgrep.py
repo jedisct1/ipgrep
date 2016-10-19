@@ -2,35 +2,60 @@
 
 import csv
 import fileinput
-import GeoIP
 import pycares
 import re
 import select
+import sortedcontainers
+import socket
 import sys
 
-GEOIPASNUM_FILE_DEFAULT = "/opt/geoip/GeoIPASNum.dat"
+IP2ASN_FILE_DEFAULT = "/opt/ip2asn/ip2asn-v4-u32.tsv"
 
 
-class GeoLookup(object):
-    def __init__(self, path=GEOIPASNUM_FILE_DEFAULT):
-        self.geoip = GeoIP.open(path, GeoIP.GEOIP_STANDARD)
+class IPLookup(object):
+    class Subnet(object):
+        def __init__(self, first_ip, last_ip, asn, country_code, description):
+            self.first_ip = long(first_ip)
+            self.last_ip = long(last_ip)
+            self.asn = int(asn)
+            self.country_code = country_code
+            self.description = description
 
-    def asn(self, ip):
-        asn = self.geoip.name_by_addr(ip)
-        if asn is None:
-            return None
-        asn_number = re.sub(r"^AS(\d+).+", "\\1", asn)
+        def none(self):
+            return Subnet(0, 0, 0, "-", "-")
+
+    def __init__(self, path=IP2ASN_FILE_DEFAULT):
+        self.subnets = sortedcontainers.SortedDict()
+        with open(path) as f:
+            for line in f:
+                parts = str.split(str.strip(line), "\t")
+                if len(parts) < 5:
+                    parts.append("-")
+                subnet = IPLookup.Subnet(parts[0], parts[1], parts[2],
+                                         parts[3], parts[4])
+                self.subnets[subnet.first_ip] = subnet
+
+    def lookup(self, ip):
+        ip4 = socket.inet_aton(ip)
+        ipn = (ord(ip4[0]) << 24) | (ord(ip4[1]) << 16) | \
+              (ord(ip4[2]) << 8) | (ord(ip4[3]))
+        found = None
         try:
-            asn_number = int(asn_number)
-        except ValueError:
+            found_key = self.subnets.irange(minimum=None, maximum=ipn,
+                                            inclusive=(True, True),
+                                            reverse=True).next()
+        except StopIteration:
             return None
-        return ASN(number=asn_number, full=asn)
+        found = self.subnets[found_key]
+        if found.last_ip < ipn:
+            return None
+        return found
 
 
 class ASN(object):
-    def __init__(self, number, full):
+    def __init__(self, number, country_code, description):
         self.number = number
-        self.full = full
+        self.description = description
 
 
 class Host(object):
@@ -40,8 +65,8 @@ class Host(object):
         self.asn = asn
 
     def __repr__(self):
-        return "ip: {}\t name: {} ASN: {}".format(self.ip, self.name,
-                                                  self.asn.full)
+        return "ip: {}\t name: {} ASN: {}".format(
+            self.ip, self.name, self.asn.description)
 
 
 class ResolverResponse(object):
@@ -110,7 +135,7 @@ class Extractor(object):
 
 
 if __name__ == "__main__":
-    geo = GeoLookup()
+    ip_lookup = IPLookup()
     resolver = Resolver()
     csvw = csv.writer(sys.stdout, delimiter="\t")
     names, ips = set(), set()
@@ -126,12 +151,15 @@ if __name__ == "__main__":
     hosts = hosts_fromnames | hosts_fromips
 
     for host in hosts:
-        asn = geo.asn(host.ip)
-        if not asn:
-            asn = ASN(0, "-")
-        host.asn = asn
+        subnet = ip_lookup.lookup(host.ip)
+        asn = ASN(0, "-", "-")
+        if subnet:
+            asn = ASN(subnet.asn, subnet.country_code,
+                      "AS{}: {} ({})".format(subnet.asn, subnet.description,
+                                             subnet.country_code))
         if not host.name:
             host.name = "-"
+        host.asn = asn
 
-    for host in sorted(hosts, key=lambda x: (x.asn.full, x.ip, x.name)):
-        csvw.writerow([host.ip, host.name, host.asn.full])
+    for host in sorted(hosts, key=lambda x: (x.asn.description, x.ip, x.name)):
+        csvw.writerow([host.ip, host.name, host.asn.description])
