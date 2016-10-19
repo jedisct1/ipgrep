@@ -9,9 +9,9 @@ config = {
     'url': 'https://github.com/jedisct1/ipgrep',
     'download_url': 'https://github.com/jedisct1/ipgrep',
     'author_email': 'github@pureftpd.org',
-    'version': '0.1',
+    'version': '0.2',
     'install_requires': [
-      'geoip', 'pycares'
+      'sortedcontainers', 'pycares'
     ],
     'packages': ['ipgrep'],
     'scripts': [],
