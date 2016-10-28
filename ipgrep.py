@@ -36,7 +36,10 @@ class IPLookup(object):
                 self.subnets[subnet.first_ip] = subnet
 
     def lookup(self, ip):
-        ip4 = socket.inet_aton(ip)
+        try:
+            ip4 = socket.inet_aton(ip)
+        except socket.error:
+            return None
         ipn = (ord(ip4[0]) << 24) | (ord(ip4[1]) << 16) | \
               (ord(ip4[2]) << 8) | (ord(ip4[3]))
         found = None
