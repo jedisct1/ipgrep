@@ -28,9 +28,4 @@ be useful to others.
 Dependencies:
 ```bash
 $ pip install pycares
-$ pip install sortedcontainers
 ```
-
-The uncompressed [ip2asn-v4-u32.tsv](https://iptoasn.com/)
-file is expected to be found in `/opt/ip2asn/ip2asn-v4-u32.tsv`, but that can be
-changed by setting `IP2ASN_FILE_DEFAULT` to a different value.

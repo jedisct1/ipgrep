@@ -2,57 +2,27 @@
 
 import csv
 import fileinput
+import json
 import pycares
 import re
+import requests
 import select
-import sortedcontainers
 import socket
 import sys
 
-IP2ASN_FILE_DEFAULT = "/opt/ip2asn/ip2asn-v4-u32.tsv"
+IPTOASN_BASE_ENDPOINT_URL = "https://api.iptoasn.com/v1/as/ip/"
 
 
 class IPLookup(object):
-    class Subnet(object):
-        def __init__(self, first_ip, last_ip, asn, country_code, description):
-            self.first_ip = long(first_ip)
-            self.last_ip = long(last_ip)
-            self.asn = int(asn)
-            self.country_code = country_code
-            self.description = description
-
-        def none(self):
-            return Subnet(0, 0, 0, "-", "-")
-
-    def __init__(self, path=IP2ASN_FILE_DEFAULT):
-        self.subnets = sortedcontainers.SortedDict()
-        with open(path) as f:
-            for line in f:
-                parts = str.split(str.strip(line), "\t")
-                if len(parts) < 5:
-                    parts.append("-")
-                subnet = IPLookup.Subnet(parts[0], parts[1], parts[2],
-                                         parts[3], parts[4])
-                self.subnets[subnet.first_ip] = subnet
-
     def lookup(self, ip):
-        try:
-            ip4 = socket.inet_aton(ip)
-        except socket.error:
+        url = IPTOASN_BASE_ENDPOINT_URL + ip
+        r = requests.get(url)
+        if r.status_code != 200:
             return None
-        ipn = (ord(ip4[0]) << 24) | (ord(ip4[1]) << 16) | \
-              (ord(ip4[2]) << 8) | (ord(ip4[3]))
-        found = None
-        try:
-            found_key = self.subnets.irange(minimum=None, maximum=ipn,
-                                            inclusive=(True, True),
-                                            reverse=True).next()
-        except StopIteration:
+        info = r.json()
+        if info is None or info['announced'] is False:
             return None
-        found = self.subnets[found_key]
-        if found.last_ip < ipn:
-            return None
-        return found
+        return info
 
 
 class ASN(object):
@@ -157,9 +127,10 @@ if __name__ == "__main__":
         subnet = ip_lookup.lookup(host.ip)
         asn = ASN(0, "-", "-")
         if subnet:
-            asn = ASN(subnet.asn, subnet.country_code,
-                      "AS{}: {} ({})".format(subnet.asn, subnet.description,
-                                             subnet.country_code))
+            asn = ASN(subnet['as_number'], subnet['as_country_code'],
+                      "AS{}: {} ({})".format(subnet['as_number'],
+                                             subnet['as_description'],
+                                             subnet['as_country_code']))
         if not host.name:
             host.name = "-"
         host.asn = asn
