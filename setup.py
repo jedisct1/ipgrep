@@ -11,7 +11,8 @@ config = {
     'author_email': 'github@pureftpd.org',
     'version': '0.2',
     'install_requires': [
-      'pycares', 'urllib3'
+        'pycares',
+        'requests',
     ],
     'packages': ['ipgrep'],
     'scripts': [],
