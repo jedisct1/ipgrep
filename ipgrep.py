@@ -88,22 +88,22 @@ class Extractor(object):
         self.txt = txt
 
     def extract_names(self):
-        label_r = r"[a-z0-9-]{1,63}([.]|\\[.]|,|\[[.]\]|[.]\]| [.])"
-        label_last = r"[a-z0-9]{1,16}($|[^a-z0-9])"
-        matches = re.findall(r"(" +
-                             r"(" + label_r + "){1,8}" +
-                             label_last + r")[.]?",
+        label_r = b"[a-z0-9-]{1,63}([.]|\\[.]|,|\[[.]\]|[.]\]| [.])"
+        label_last = b"[a-z0-9]{1,16}($|[^a-z0-9])"
+        matches = re.findall(b"(" +
+                             b"(" + label_r + b"){1,8}" +
+                             label_last + b")[.]?",
                              self.txt, re.I)
-        names = [re.sub(r",", ".", x[0]).lower() for x in matches]
-        names = [re.sub(r"[^a-z0-9-.]", "", x) for x in names]
+        names = [re.sub(b",", b".", x[0]).lower() for x in matches]
+        names = [re.sub(b"[^a-z0-9-.]", b"", x).decode() for x in names]
         return names
 
     def extract_ips(self):
-        matches = re.findall(r"([^0-9]|^)([0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
-                             "[0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
-                             "[0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
-                             "[0-9]{1,3})([^0-9]|$)", self.txt)
-        ips = [re.sub(r"[^0-9.]", "", x[1]) for x in matches]
+        matches = re.findall(b"([^0-9]|^)([0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
+                             b"[0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
+                             b"[0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
+                             b"[0-9]{1,3})([^0-9]|$)", self.txt)
+        ips = [re.sub(b"[^0-9.]", b"", x[1]).decode() for x in matches]
         return ips
 
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     csvw = csv.writer(sys.stdout, delimiter="\t")
     names, ips = set(), set()
 
-    for line in fileinput.input():
+    for line in fileinput.input(mode='rb'):
         extractor = Extractor(line)
         names = names | set(extractor.extract_names())
         ips = ips | set(extractor.extract_ips())
