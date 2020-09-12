@@ -20,7 +20,7 @@ class IPLookup(object):
         if r.status_code != 200:
             return None
         info = r.json()
-        if info is None or info['announced'] is False:
+        if info is None or info["announced"] is False:
             return None
         return info
 
@@ -39,7 +39,8 @@ class Host(object):
 
     def __repr__(self):
         return "ip: {}\t name: {} ASN: {}".format(
-            self.ip, self.name, self.asn.description)
+            self.ip, self.name, self.asn.description
+        )
 
 
 class ResolverResponse(object):
@@ -65,11 +66,11 @@ class Resolver(object):
                 break
             timeout = self.channel.timeout()
             if timeout == 0.0:
-                self.channel.process_fd(pycares.ARES_SOCKET_BAD,
-                                        pycares.ARES_SOCKET_BAD)
+                self.channel.process_fd(
+                    pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD
+                )
                 continue
-            rlist, wlist, xlist = select.select(read_fds, write_fds, [],
-                                                timeout)
+            rlist, wlist, xlist = select.select(read_fds, write_fds, [], timeout)
             for fd in rlist:
                 self.channel.process_fd(fd, pycares.ARES_SOCKET_BAD)
             for fd in wlist:
@@ -90,19 +91,21 @@ class Extractor(object):
     def extract_names(self):
         label_r = b"[a-z0-9-]{1,63}([.]|\\[.]|,|\[[.]\]|[.]\]| [.])"
         label_last = b"[a-z0-9]{1,16}($|[^a-z0-9])"
-        matches = re.findall(b"(" +
-                             b"(" + label_r + b"){1,8}" +
-                             label_last + b")[.]?",
-                             self.txt, re.I)
+        matches = re.findall(
+            b"(" + b"(" + label_r + b"){1,8}" + label_last + b")[.]?", self.txt, re.I
+        )
         names = [re.sub(b",", b".", x[0]).lower() for x in matches]
         names = [re.sub(b"[^a-z0-9-.]", b"", x).decode() for x in names]
         return names
 
     def extract_ips(self):
-        matches = re.findall(b"([^0-9]|^)([0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
-                             b"[0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
-                             b"[0-9]{1,3}(\.|\s*\[\.?\]\s*)" +
-                             b"[0-9]{1,3})([^0-9]|$)", self.txt)
+        matches = re.findall(
+            b"([^0-9]|^)([0-9]{1,3}(\.|\s*\[\.?\]\s*)"
+            + b"[0-9]{1,3}(\.|\s*\[\.?\]\s*)"
+            + b"[0-9]{1,3}(\.|\s*\[\.?\]\s*)"
+            + b"[0-9]{1,3})([^0-9]|$)",
+            self.txt,
+        )
         ips = [re.sub(b"[^0-9.]", b"", x[1]).decode() for x in matches]
         return ips
 
@@ -113,7 +116,7 @@ if __name__ == "__main__":
     csvw = csv.writer(sys.stdout, delimiter="\t")
     names, ips = set(), set()
 
-    for line in fileinput.input(mode='rb'):
+    for line in fileinput.input(mode="rb"):
         extractor = Extractor(line)
         names = names | set(extractor.extract_names())
         ips = ips | set(extractor.extract_ips())
@@ -127,10 +130,15 @@ if __name__ == "__main__":
         subnet = ip_lookup.lookup(host.ip)
         asn = ASN(0, "-", "-")
         if subnet:
-            asn = ASN(subnet['as_number'], subnet['as_country_code'],
-                      "AS{}: {} ({})".format(subnet['as_number'],
-                                             subnet['as_description'],
-                                             subnet['as_country_code']))
+            asn = ASN(
+                subnet["as_number"],
+                subnet["as_country_code"],
+                "AS{}: {} ({})".format(
+                    subnet["as_number"],
+                    subnet["as_description"],
+                    subnet["as_country_code"],
+                ),
+            )
         if not host.name:
             host.name = "-"
         host.asn = asn
