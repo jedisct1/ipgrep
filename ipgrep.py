@@ -78,7 +78,7 @@ class Resolver(object):
     def resolve(self, names):
         res = set()
         for name in names:
-            response = ResolverResponse(name, self.channel, res)
+            ResolverResponse(name, self.channel, res)
         self._wait()
         return res
 
