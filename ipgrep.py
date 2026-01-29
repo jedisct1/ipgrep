@@ -2,12 +2,10 @@
 
 import csv
 import fileinput
-import json
 import pycares
 import re
 import requests
 import select
-import socket
 import sys
 
 IPTOASN_BASE_ENDPOINT_URL = "https://api.iptoasn.com/v1/as/ip/"
@@ -28,6 +26,7 @@ class IPLookup(object):
 class ASN(object):
     def __init__(self, number, country_code, description):
         self.number = number
+        self.country_code = country_code
         self.description = description
 
 
